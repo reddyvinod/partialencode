@@ -1,6 +1,6 @@
 package tests
 
-//easyjson:json
+//partialencode:json
 type DisallowUnknown struct {
 	FieldOne string `json:"field_one"`
 }

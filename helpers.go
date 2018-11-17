@@ -1,5 +1,5 @@
-// Package easyjson contains marshaler/unmarshaler interfaces and helper functions.
-package easyjson
+// Package partialencode contains marshaler/unmarshaler interfaces and helper functions.
+package partialencode
 
 import (
 	"io"
@@ -7,18 +7,18 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mailru/easyjson/jlexer"
-	"github.com/mailru/easyjson/jwriter"
+	"github.com/reddyvinod/partialencode/jlexer"
+	"github.com/reddyvinod/partialencode/jwriter"
 )
 
-// Marshaler is an easyjson-compatible marshaler interface.
+// Marshaler is an partialencode-compatible marshaler interface.
 type Marshaler interface {
-	MarshalEasyJSON(w *jwriter.Writer)
+	MarshalPartialJSON(w *jwriter.Writer)
 }
 
-// Marshaler is an easyjson-compatible unmarshaler interface.
+// Marshaler is an partialencode-compatible unmarshaler interface.
 type Unmarshaler interface {
-	UnmarshalEasyJSON(w *jlexer.Lexer)
+	UnMarshalPartialJSON(w *jlexer.Lexer)
 }
 
 // Optional defines an undefined-test method for a type to integrate with 'omitempty' logic.
@@ -30,14 +30,14 @@ type Optional interface {
 // from a chain of smaller chunks.
 func Marshal(v Marshaler) ([]byte, error) {
 	w := jwriter.Writer{}
-	v.MarshalEasyJSON(&w)
+	v.MarshalPartialJSON(&w)
 	return w.BuildBytes()
 }
 
 // MarshalToWriter marshals the data to an io.Writer.
 func MarshalToWriter(v Marshaler, w io.Writer) (written int, err error) {
 	jw := jwriter.Writer{}
-	v.MarshalEasyJSON(&jw)
+	v.MarshalPartialJSON(&jw)
 	return jw.DumpTo(w)
 }
 
@@ -47,7 +47,7 @@ func MarshalToWriter(v Marshaler, w io.Writer) (written int, err error) {
 // invoked (in this case a 500 reply is possible).
 func MarshalToHTTPResponseWriter(v Marshaler, w http.ResponseWriter) (started bool, written int, err error) {
 	jw := jwriter.Writer{}
-	v.MarshalEasyJSON(&jw)
+	v.MarshalPartialJSON(&jw)
 	if jw.Error != nil {
 		return false, 0, jw.Error
 	}
@@ -62,7 +62,7 @@ func MarshalToHTTPResponseWriter(v Marshaler, w http.ResponseWriter) (started bo
 // Unmarshal decodes the JSON in data into the object.
 func Unmarshal(data []byte, v Unmarshaler) error {
 	l := jlexer.Lexer{Data: data}
-	v.UnmarshalEasyJSON(&l)
+	v.UnMarshalPartialJSON(&l)
 	return l.Error()
 }
 
@@ -73,6 +73,6 @@ func UnmarshalFromReader(r io.Reader, v Unmarshaler) error {
 		return err
 	}
 	l := jlexer.Lexer{Data: data}
-	v.UnmarshalEasyJSON(&l)
+	v.UnMarshalPartialJSON(&l)
 	return l.Error()
 }

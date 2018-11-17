@@ -1,11 +1,11 @@
 package tests
 
 import (
-	"github.com/mailru/easyjson"
-	"github.com/mailru/easyjson/jwriter"
+	"github.com/reddyvinod/partialencode"
+	"github.com/reddyvinod/partialencode/jwriter"
 )
 
-//easyjson:json
+//partialencode:json
 type NestedInterfaces struct {
 	Value interface{}
 	Slice []interface{}
@@ -16,10 +16,10 @@ type NestedEasyMarshaler struct {
 	EasilyMarshaled bool
 }
 
-var _ easyjson.Marshaler = &NestedEasyMarshaler{}
+var _ partialencode.Marshaler = &NestedEasyMarshaler{}
 
-func (i *NestedEasyMarshaler) MarshalEasyJSON(w *jwriter.Writer) {
-	// We use this method only to indicate that easyjson.Marshaler
+func (i *NestedEasyMarshaler) MarshalPartialJSON(w *jwriter.Writer) {
+	// We use this method only to indicate that partialencode.Marshaler
 	// interface was really used while encoding.
 	i.EasilyMarshaled = true
 }

@@ -1,5 +1,5 @@
 //+build use_codec
-//+build !easyjson_nounsafe
+//+build !partialencode_nounsafe
 //+build !appengine
 
 // ************************************************************

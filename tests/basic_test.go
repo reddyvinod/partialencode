@@ -6,8 +6,8 @@ import (
 
 	"encoding/json"
 
-	"github.com/mailru/easyjson"
-	"github.com/mailru/easyjson/jwriter"
+	"github.com/reddyvinod/partialencode"
+	"github.com/reddyvinod/partialencode/jwriter"
 )
 
 type testType interface {
@@ -86,11 +86,11 @@ func TestUnmarshal(t *testing.T) {
 
 func TestRawMessageSTD(t *testing.T) {
 	type T struct {
-		F    easyjson.RawMessage
-		Fnil easyjson.RawMessage
+		F    partialencode.RawMessage
+		Fnil partialencode.RawMessage
 	}
 
-	val := T{F: easyjson.RawMessage([]byte(`"test"`))}
+	val := T{F: partialencode.RawMessage([]byte(`"test"`))}
 	str := `{"F":"test","Fnil":null}`
 
 	data, err := json.Marshal(val)
@@ -102,7 +102,7 @@ func TestRawMessageSTD(t *testing.T) {
 		t.Errorf("json.Marshal() = %v; want %v", got, str)
 	}
 
-	wantV := T{F: easyjson.RawMessage([]byte(`"test"`)), Fnil: easyjson.RawMessage([]byte("null"))}
+	wantV := T{F: partialencode.RawMessage([]byte(`"test"`)), Fnil: partialencode.RawMessage([]byte("null"))}
 	var gotV T
 
 	err = json.Unmarshal([]byte(str), &gotV)
@@ -116,7 +116,7 @@ func TestRawMessageSTD(t *testing.T) {
 
 func TestParseNull(t *testing.T) {
 	var got, want SubStruct
-	if err := easyjson.Unmarshal([]byte("null"), &got); err != nil {
+	if err := partialencode.Unmarshal([]byte("null"), &got); err != nil {
 		t.Errorf("Unmarshal() error: %v", err)
 	}
 
@@ -153,7 +153,7 @@ func TestSpecialCases(t *testing.T) {
 
 func TestOverflowArray(t *testing.T) {
 	var a Arrays
-	err := easyjson.Unmarshal([]byte(arrayOverflowString), &a)
+	err := partialencode.Unmarshal([]byte(arrayOverflowString), &a)
 	if err != nil {
 		t.Error(err)
 	}
@@ -164,7 +164,7 @@ func TestOverflowArray(t *testing.T) {
 
 func TestUnderflowArray(t *testing.T) {
 	var a Arrays
-	err := easyjson.Unmarshal([]byte(arrayUnderflowString), &a)
+	err := partialencode.Unmarshal([]byte(arrayUnderflowString), &a)
 	if err != nil {
 		t.Error(err)
 	}
@@ -176,7 +176,7 @@ func TestUnderflowArray(t *testing.T) {
 func TestEncodingFlags(t *testing.T) {
 	for i, test := range []struct {
 		Flags jwriter.Flags
-		In    easyjson.Marshaler
+		In    partialencode.Marshaler
 		Want  string
 	}{
 		{0, EncodingFlagsTestMap{}, `{"F":null}`},
@@ -185,22 +185,22 @@ func TestEncodingFlags(t *testing.T) {
 		{jwriter.NilSliceAsEmpty, EncodingFlagsTestSlice{}, `{"F":[]}`},
 	} {
 		w := &jwriter.Writer{Flags: test.Flags}
-		test.In.MarshalEasyJSON(w)
+		test.In.MarshalPartialJSON(w)
 
 		data, err := w.BuildBytes()
 		if err != nil {
-			t.Errorf("[%v] easyjson.Marshal(%+v) error: %v", i, test.In, err)
+			t.Errorf("[%v] partialencode.Marshal(%+v) error: %v", i, test.In, err)
 		}
 
 		v := string(data)
 		if v != test.Want {
-			t.Errorf("[%v] easyjson.Marshal(%+v) = %v; want %v", i, test.In, v, test.Want)
+			t.Errorf("[%v] partialencode.Marshal(%+v) = %v; want %v", i, test.In, v, test.Want)
 		}
 	}
 
 }
 
-func TestNestedEasyJsonMarshal(t *testing.T) {
+func TestNestedpartialencodeMarshal(t *testing.T) {
 	n := map[string]*NestedEasyMarshaler{
 		"Value":  {},
 		"Slice1": {},
@@ -214,7 +214,7 @@ func TestNestedEasyJsonMarshal(t *testing.T) {
 		Slice: []interface{}{n["Slice1"], n["Slice2"]},
 		Map:   map[string]interface{}{"1": n["Map1"], "2": n["Map2"]},
 	}
-	easyjson.Marshal(ni)
+	partialencode.Marshal(ni)
 
 	for k, v := range n {
 		if !v.EasilyMarshaled {
@@ -226,18 +226,18 @@ func TestNestedEasyJsonMarshal(t *testing.T) {
 func TestUnmarshalStructWithEmbeddedPtrStruct(t *testing.T) {
 	var s = StructWithInterface{Field2: &EmbeddedStruct{}}
 	var err error
-	err = easyjson.Unmarshal([]byte(structWithInterfaceString), &s)
+	err = partialencode.Unmarshal([]byte(structWithInterfaceString), &s)
 	if err != nil {
-		t.Errorf("easyjson.Unmarshal() error: %v", err)
+		t.Errorf("partialencode.Unmarshal() error: %v", err)
 	}
 	if !reflect.DeepEqual(s, structWithInterfaceValueFilled) {
-		t.Errorf("easyjson.Unmarshal() = %#v; want %#v", s, structWithInterfaceValueFilled)
+		t.Errorf("partialencode.Unmarshal() = %#v; want %#v", s, structWithInterfaceValueFilled)
 	}
 }
 
 func TestDisallowUnknown(t *testing.T) {
 	var d DisallowUnknown
-	err := easyjson.Unmarshal([]byte(disallowUnknownString), &d)
+	err := partialencode.Unmarshal([]byte(disallowUnknownString), &d)
 	if err == nil {
 		t.Error("want error, got nil")
 	}

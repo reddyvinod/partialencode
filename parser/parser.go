@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const structComment = "easyjson:json"
+const structComment = "partialencode:json"
 
 type Parser struct {
 	PkgPath     string

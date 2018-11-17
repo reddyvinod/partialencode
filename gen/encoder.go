@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mailru/easyjson"
+	"github.com/reddyvinod/partialencode"
 )
 
 func (g *Generator) getEncoderName(t reflect.Type) string {
@@ -88,9 +88,9 @@ func parseFieldTags(f reflect.StructField) fieldTags {
 func (g *Generator) genTypeEncoder(t reflect.Type, in string, tags fieldTags, indent int, assumeNonEmpty bool) error {
 	ws := strings.Repeat("  ", indent)
 
-	marshalerIface := reflect.TypeOf((*easyjson.Marshaler)(nil)).Elem()
+	marshalerIface := reflect.TypeOf((*partialencode.Marshaler)(nil)).Elem()
 	if reflect.PtrTo(t).Implements(marshalerIface) {
-		fmt.Fprintln(g.out, ws+"("+in+").MarshalEasyJSON(out)")
+		fmt.Fprintln(g.out, ws+"("+in+").MarshalPartialJSON(out)")
 		return nil
 	}
 
@@ -113,7 +113,7 @@ func (g *Generator) genTypeEncoder(t reflect.Type, in string, tags fieldTags, in
 // returns true of the type t implements one of the custom marshaler interfaces
 func hasCustomMarshaler(t reflect.Type) bool {
 	t = reflect.PtrTo(t)
-	return t.Implements(reflect.TypeOf((*easyjson.Marshaler)(nil)).Elem()) ||
+	return t.Implements(reflect.TypeOf((*partialencode.Marshaler)(nil)).Elem()) ||
 		t.Implements(reflect.TypeOf((*json.Marshaler)(nil)).Elem()) ||
 		t.Implements(reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem())
 }
@@ -245,8 +245,8 @@ func (g *Generator) genTypeEncoderNoCheck(t reflect.Type, in string, tags fieldT
 		if t.NumMethod() != 0 {
 			return fmt.Errorf("interface type %v not supported: only interface{} is allowed", t)
 		}
-		fmt.Fprintln(g.out, ws+"if m, ok := "+in+".(easyjson.Marshaler); ok {")
-		fmt.Fprintln(g.out, ws+"  m.MarshalEasyJSON(out)")
+		fmt.Fprintln(g.out, ws+"if m, ok := "+in+".(partialencode.Marshaler); ok {")
+		fmt.Fprintln(g.out, ws+"  m.MarshalPartialJSON(out)")
 		fmt.Fprintln(g.out, ws+"} else if m, ok := "+in+".(json.Marshaler); ok {")
 		fmt.Fprintln(g.out, ws+"  out.Raw(m.MarshalJSON())")
 		fmt.Fprintln(g.out, ws+"} else {")
@@ -260,7 +260,7 @@ func (g *Generator) genTypeEncoderNoCheck(t reflect.Type, in string, tags fieldT
 }
 
 func (g *Generator) notEmptyCheck(t reflect.Type, v string) string {
-	optionalIface := reflect.TypeOf((*easyjson.Optional)(nil)).Elem()
+	optionalIface := reflect.TypeOf((*partialencode.Optional)(nil)).Elem()
 	if reflect.PtrTo(t).Implements(optionalIface) {
 		return "(" + v + ").IsDefined()"
 	}
@@ -390,8 +390,8 @@ func (g *Generator) genStructMarshaler(t reflect.Type) error {
 		fmt.Fprintln(g.out, "}")
 	}
 
-	fmt.Fprintln(g.out, "// MarshalEasyJSON supports easyjson.Marshaler interface")
-	fmt.Fprintln(g.out, "func (v "+typ+") MarshalEasyJSON(w *jwriter.Writer) {")
+	fmt.Fprintln(g.out, "// MarshalPartialJSON supports partialencode.Marshaler interface")
+	fmt.Fprintln(g.out, "func (v "+typ+") MarshalPartialJSON(w *jwriter.Writer) {")
 	fmt.Fprintln(g.out, "  "+fname+"(w, v)")
 	fmt.Fprintln(g.out, "}")
 

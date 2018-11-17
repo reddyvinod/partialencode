@@ -1,16 +1,16 @@
-package easyjson
+package partialencode
 
 import (
-	"github.com/mailru/easyjson/jlexer"
-	"github.com/mailru/easyjson/jwriter"
+	"github.com/reddyvinod/partialencode/jlexer"
+	"github.com/reddyvinod/partialencode/jwriter"
 )
 
 // RawMessage is a raw piece of JSON (number, string, bool, object, array or
 // null) that is extracted without parsing and output as is during marshaling.
 type RawMessage []byte
 
-// MarshalEasyJSON does JSON marshaling using easyjson interface.
-func (v *RawMessage) MarshalEasyJSON(w *jwriter.Writer) {
+// MarshalPartialJSON does JSON marshaling using partialencode interface.
+func (v *RawMessage) MarshalPartialJSON(w *jwriter.Writer) {
 	if len(*v) == 0 {
 		w.RawString("null")
 	} else {
@@ -18,8 +18,8 @@ func (v *RawMessage) MarshalEasyJSON(w *jwriter.Writer) {
 	}
 }
 
-// UnmarshalEasyJSON does JSON unmarshaling using easyjson interface.
-func (v *RawMessage) UnmarshalEasyJSON(l *jlexer.Lexer) {
+// UnMarshalPartialJSON does JSON unmarshaling using partialencode interface.
+func (v *RawMessage) UnMarshalPartialJSON(l *jlexer.Lexer) {
 	*v = RawMessage(l.Raw())
 }
 
@@ -39,7 +39,7 @@ func (v RawMessage) MarshalJSON() ([]byte, error) {
 	return v, nil
 }
 
-// IsDefined is required for integration with omitempty easyjson logic.
+// IsDefined is required for integration with omitempty partialencode logic.
 func (v *RawMessage) IsDefined() bool {
 	return len(*v) > 0
 }

@@ -5,8 +5,8 @@ package opt
 import (
 	"fmt"
 
-	"github.com/mailru/easyjson/jlexer"
-	"github.com/mailru/easyjson/jwriter"
+	"github.com/reddyvinod/partialencode/jlexer"
+	"github.com/reddyvinod/partialencode/jwriter"
 )
 
 // template type Optional(A)
@@ -30,8 +30,8 @@ func (v Int16) Get(deflt int16) int16 {
 	return v.V
 }
 
-// MarshalEasyJSON does JSON marshaling using easyjson interface.
-func (v Int16) MarshalEasyJSON(w *jwriter.Writer) {
+// MarshalPartialJSON does JSON marshaling using partialencode interface.
+func (v Int16) MarshalPartialJSON(w *jwriter.Writer) {
 	if v.Defined {
 		w.Int16(v.V)
 	} else {
@@ -39,8 +39,8 @@ func (v Int16) MarshalEasyJSON(w *jwriter.Writer) {
 	}
 }
 
-// UnmarshalEasyJSON does JSON unmarshaling using easyjson interface.
-func (v *Int16) UnmarshalEasyJSON(l *jlexer.Lexer) {
+// UnMarshalPartialJSON does JSON unmarshaling using partialencode interface.
+func (v *Int16) UnMarshalPartialJSON(l *jlexer.Lexer) {
 	if l.IsNull() {
 		l.Skip()
 		*v = Int16{}
@@ -53,14 +53,14 @@ func (v *Int16) UnmarshalEasyJSON(l *jlexer.Lexer) {
 // MarshalJSON implements a standard json marshaler interface.
 func (v Int16) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	v.MarshalEasyJSON(&w)
+	v.MarshalPartialJSON(&w)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // UnmarshalJSON implements a standard json unmarshaler interface.
 func (v *Int16) UnmarshalJSON(data []byte) error {
 	l := jlexer.Lexer{Data: data}
-	v.UnmarshalEasyJSON(&l)
+	v.UnMarshalPartialJSON(&l)
 	return l.Error()
 }
 

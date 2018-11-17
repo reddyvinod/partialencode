@@ -2,7 +2,7 @@ package tests
 
 import fmt "fmt"
 
-//easyjson:json
+//partialencode:json
 type CustomMapKeyType struct {
 	Map map[customKeyType]int
 }

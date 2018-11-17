@@ -1,6 +1,6 @@
 package tests
 
-//easyjson:json
+//partialencode:json
 type SnakeStruct struct {
 	WeirdHTTPStuff   bool
 	CustomNamedField string `json:"cUsToM"`
