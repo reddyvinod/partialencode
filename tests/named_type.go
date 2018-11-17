@@ -1,9 +1,9 @@
 package tests
 
-//easyjson:json
+//partialencode:json
 type NamedType struct {
 	Inner struct {
-		// easyjson is mistakenly naming the type of this field 'tests.MyString' in the generated output
+		// partialencode is mistakenly naming the type of this field 'tests.MyString' in the generated output
 		// something about a named type inside an anonmymous type is triggering this bug
 		Field  MyString `tag:"value"`
 		Field2 int      "tag:\"value with ` in it\""

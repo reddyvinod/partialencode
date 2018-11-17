@@ -1,6 +1,6 @@
 package tests
 
-//easyjson:json
+//partialencode:json
 type EmbeddedType struct {
 	EmbeddedInnerType
 	Inner struct {

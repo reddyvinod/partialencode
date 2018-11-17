@@ -1,6 +1,6 @@
 package tests
 
-//easyjson:json
+//partialencode:json
 type OmitEmptyDefault struct {
 	Field string
 	Str   string
