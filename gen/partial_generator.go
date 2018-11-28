@@ -41,15 +41,13 @@ type PartialGenerator struct {
 	// types that encoders were requested for (e.g. by encoders of other types)
 	typesUnseen []reflect.Type
 
-	// types that encoders were already generated for
-	externalTypesSeen map[reflect.Type]bool
-
-	// types that encoders were requested for (e.g. by encoders of other types)
-	externalTypesUnseen []reflect.Type
-
 	// struct name to relevant type maps to track names of partial-struct in
 	// case of a name clash or unnamed structs
 	structNames map[string]reflect.Type
+
+	// struct name to relevant type maps to track names of partial-struct in
+	// case of a name clash or unnamed structs
+	structBoolNames map[string]reflect.Type
 }
 
 // SetPkg sets the name and path of output package.
@@ -76,19 +74,6 @@ func (g *PartialGenerator) addType(t reflect.Type) {
 	g.typesUnseen = append(g.typesUnseen, t)
 }
 
-// addTypes requests to generate encoding/decoding funcs for the given type.
-func (g *PartialGenerator) addExternalType(t reflect.Type) {
-	if g.externalTypesSeen[t] {
-		return
-	}
-	for _, t1 := range g.externalTypesUnseen {
-		if t1 == t {
-			return
-		}
-	}
-	g.externalTypesUnseen = append(g.externalTypesUnseen, t)
-}
-
 // Add requests to generate marshaler/unmarshalers and encoding/decoding
 // funcs for the type of given object.
 func (g *PartialGenerator) Add(obj interface{}) {
@@ -101,12 +86,10 @@ func (g *PartialGenerator) Add(obj interface{}) {
 
 func NewPartialGenerator(filename string) *PartialGenerator {
 	ret := &PartialGenerator{
-		imports: map[string]string{
-			basic: "basic",
-		},
-		typesSeen:         make(map[reflect.Type]bool),
-		externalTypesSeen: make(map[reflect.Type]bool),
-		structNames:       make(map[string]reflect.Type),
+		imports:         make(map[string]string),
+		typesSeen:       make(map[reflect.Type]bool),
+		structNames:     make(map[string]reflect.Type),
+		structBoolNames: make(map[string]reflect.Type),
 	}
 
 	// Use a file-unique prefix on all auxiliary funcs to avoid
@@ -130,14 +113,8 @@ func (g *PartialGenerator) Run(out io.Writer) error {
 		if err := g.genPartialStruct(t); err != nil {
 			return err
 		}
-	}
 
-	for len(g.externalTypesUnseen) > 0 {
-		t := g.externalTypesUnseen[len(g.externalTypesUnseen)-1]
-		g.externalTypesUnseen = g.externalTypesUnseen[:len(g.externalTypesUnseen)-1]
-		g.externalTypesSeen[t] = true
-
-		if err := g.genExternalTypePartialStruct(t); err != nil {
+		if err := g.genPartialBoolStruct(t); err != nil {
 			return err
 		}
 	}
@@ -172,10 +149,6 @@ func (g *PartialGenerator) printStructsHeader() {
 
 	fmt.Println(")")
 	fmt.Println("")
-	fmt.Println("// suppress unused package warning")
-	fmt.Println("var (")
-	fmt.Println("   _ basic.Int")
-	fmt.Println(")")
 
 	fmt.Println()
 }
@@ -185,7 +158,6 @@ func (g *PartialGenerator) printStructsHeader() {
 //
 // Method is used to track encoder/decoder names for the type.
 func (g *PartialGenerator) structName(prefix string, t reflect.Type) string {
-	prefix = joinFunctionNameParts(false, prefix, g.hashString)
 	name := joinFunctionNameParts(false, prefix, t.Name())
 
 	// Most of the names will be unique, try a shortcut first.
@@ -208,6 +180,33 @@ func (g *PartialGenerator) structName(prefix string, t reflect.Type) string {
 			continue
 		}
 		g.structNames[nm] = t
+		return nm
+	}
+}
+
+func (g *PartialGenerator) structBoolName(prefix string, t reflect.Type) string {
+	name := joinFunctionNameParts(false, prefix, t.Name())
+
+	// Most of the names will be unique, try a shortcut first.
+	if e, ok := g.structBoolNames[name]; !ok || e == t {
+		g.structBoolNames[name] = t
+		return name
+	}
+
+	// Search if the strut already exists.
+	for name1, t1 := range g.structBoolNames {
+		if t1 == t && strings.HasPrefix(name1, prefix) {
+			return name1
+		}
+	}
+
+	// Create a new name in the case of a clash.
+	for i := 1; ; i++ {
+		nm := fmt.Sprint(name, i)
+		if _, ok := g.structBoolNames[nm]; ok {
+			continue
+		}
+		g.structBoolNames[nm] = t
 		return nm
 	}
 }

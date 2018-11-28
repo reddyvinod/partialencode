@@ -54,26 +54,10 @@ func (g *Generator) writePartial() error {
 	fmt.Fprintln(f, "// compilable during generation.")
 	fmt.Fprintln(f)
 	fmt.Fprintln(f, "package ", g.PkgName)
-
-	if len(g.Types) > 0 {
-		fmt.Fprintln(f)
-		fmt.Fprintln(f, "import (")
-		fmt.Fprintln(f, `  "`+pkgWriter+`"`)
-		fmt.Fprintln(f, `  "`+pkgLexer+`"`)
-		fmt.Fprintln(f, ")")
-	}
+	fmt.Fprintln(f)
 
 	sort.Strings(g.Types)
 	for _, t := range g.Types {
-		fmt.Fprintln(f)
-		if !g.NoStdMarshalers {
-			fmt.Fprintln(f, "func (", t, ") MarshalJSON() ([]byte, error) { return nil, nil }")
-			fmt.Fprintln(f, "func (*", t, ") UnmarshalJSON([]byte) error { return nil }")
-		}
-
-		fmt.Fprintln(f, "func (", t, ") MarshalPartialJSON(w *jwriter.Writer) {}")
-		fmt.Fprintln(f, "func (*", t, ") UnMarshalPartialJSON(l *jlexer.Lexer) {}")
-		fmt.Fprintln(f)
 		fmt.Fprintln(f, "type Partial_exporter_"+t+" *"+t)
 	}
 	return nil

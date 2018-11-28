@@ -3,6 +3,7 @@ module github.com/reddyvinod/partialencode
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/json-iterator/go v1.1.5
+	github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/ncw/gotemplate v0.0.0-20181007210840-4ea097f53027 // indirect

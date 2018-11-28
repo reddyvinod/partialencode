@@ -5,7 +5,9 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -90,6 +92,25 @@ func (p *Parser) Parse(fname string, isDir bool) error {
 		ast.Walk(&visitor{Parser: p}, f)
 	}
 	return nil
+}
+
+func GetAllFiles(dname string, files *[]string, excludeDirs []string) error {
+	return filepath.Walk(dname, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			for _, d := range excludeDirs {
+				if info.Name() == d {
+					return filepath.SkipDir
+				}
+			}
+		}
+		if filepath.Ext(path) == ".go" {
+			*files = append(*files, path)
+		}
+		return nil
+	})
 }
 
 func getDefaultGoPath() (string, error) {

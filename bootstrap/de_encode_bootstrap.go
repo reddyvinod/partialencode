@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 // writePartial outputs an initial stubs for marshalers/unmarshalers so that the package
@@ -105,7 +106,9 @@ func (g *Generator) writeDeEncodeMain() (path string, err error) {
 
 	sort.Strings(g.Types)
 	for _, v := range g.Types {
-		fmt.Fprintln(f, "  g.Add(pkg.Partial_exporter_"+v+"(nil))")
+		if !strings.HasPrefix(v, "PartialBool") {
+			fmt.Fprintln(f, "  g.Add(pkg.Partial_exporter_"+v+"(nil))")
+		}
 	}
 
 	fmt.Fprintln(f, "  if err := g.Run(os.Stdout); err != nil {")

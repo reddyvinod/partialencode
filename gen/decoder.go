@@ -284,6 +284,13 @@ func (g *Generator) genStructFieldDecoder(t reflect.Type, f reflect.StructField)
 	}
 
 	fmt.Fprintf(g.out, "    case %q:\n", jsonName)
+	fmt.Fprintln(g.out, "       if in.IsNull() {")
+	fmt.Fprintln(g.out, "          out."+PartialSetKey+"."+f.Name+" = true")
+	fmt.Fprintln(g.out, "          in.Skip()")
+	fmt.Fprintln(g.out, "          in.WantComma()")
+	fmt.Fprintln(g.out, "          continue")
+	fmt.Fprintln(g.out, "       }")
+	fmt.Fprintln(g.out, "       out."+PartialValidKey+"."+f.Name+" = true")
 	if err := g.genTypeDecoder(f.Type, "out."+f.Name, tags, 3); err != nil {
 		return err
 	}
@@ -447,14 +454,16 @@ func (g *Generator) genStructDecoder(t reflect.Type) error {
 	fmt.Fprintln(g.out, "  for !in.IsDelim('}') {")
 	fmt.Fprintln(g.out, "    key := in.UnsafeString()")
 	fmt.Fprintln(g.out, "    in.WantColon()")
-	fmt.Fprintln(g.out, "    if in.IsNull() {")
-	fmt.Fprintln(g.out, "       in.Skip()")
-	fmt.Fprintln(g.out, "       in.WantComma()")
-	fmt.Fprintln(g.out, "       continue")
-	fmt.Fprintln(g.out, "    }")
 
 	fmt.Fprintln(g.out, "    switch key {")
 	for _, f := range fs {
+
+		switch f.Name {
+		case PartialValidKey, PartialSetKey:
+			continue
+		default:
+		}
+
 		if err := g.genStructFieldDecoder(t, f); err != nil {
 			return err
 		}

@@ -28,133 +28,193 @@ var noformat = flag.Bool("noformat", false, "do not run 'gofmt -w' on output fil
 var partialSpecifiedName = flag.String("partial_filename", "", "specify the filename of the partial structs output")
 var deencoderSpecifiedName = flag.String("de_encode_filename", "", "specify the filename of the de/encoders output")
 var processPkg = flag.Bool("pkg", false, "process the whole package instead of just the given file")
+var recursive = flag.Bool("recursive", false, "process the directory recursively")
+var excludeDirs = flag.String("exclude_dirs", "", "comma separated list of directories to skip when processing the directory recursively")
 var disallowUnknownFields = flag.Bool("disallow_unknown_fields", false, "return error if any unknown field in json appeared")
 
-func generate(fname string) (err error) {
-	var partialName string
-	{
-		fInfo, err := os.Stat(fname)
-		if err != nil {
-			return err
-		}
+func generatePartial(fname string) (partialName string, err error) {
 
-		p := parser.Parser{AllStructs: *allStructs}
-		if err := p.Parse(fname, fInfo.IsDir()); err != nil {
-			return fmt.Errorf("Error parsing %v: %v", fname, err)
-		}
+	fInfo, err := os.Stat(fname)
+	if err != nil {
+		return
+	}
 
-		if fInfo.IsDir() {
-			partialName = filepath.Join(fname, p.PkgName+"_partial.go")
+	p := parser.Parser{AllStructs: *allStructs}
+	if err = p.Parse(fname, fInfo.IsDir()); err != nil {
+		err = fmt.Errorf("Error parsing %v: %v", fname, err)
+		return
+	}
+
+	if fInfo.IsDir() {
+		partialName = filepath.Join(fname, p.PkgName+"_partial.go")
+	} else {
+		if s := strings.TrimSuffix(fname, ".go"); s == fname {
+			err = errors.New("Filename must end in '.go'")
+			return
 		} else {
-			if s := strings.TrimSuffix(fname, ".go"); s == fname {
-				return errors.New("Filename must end in '.go'")
-			} else {
-				partialName = s + "_partial.go"
-			}
-		}
-		if *partialSpecifiedName != "" {
-			partialName = *partialSpecifiedName
-		}
-
-		var trimmedBuildTags string
-		if *buildTags != "" {
-			trimmedBuildTags = strings.TrimSpace(*buildTags)
-		}
-
-		g := bootstrap.Generator{
-			BuildTags:             trimmedBuildTags,
-			PkgPath:               p.PkgPath,
-			PkgName:               p.PkgName,
-			Types:                 p.StructNames,
-			SnakeCase:             *snakeCase,
-			LowerCamelCase:        *lowerCamelCase,
-			NoStdMarshalers:       *noStdMarshalers,
-			DisallowUnknownFields: *disallowUnknownFields,
-			OmitEmpty:             *omitEmpty,
-			LeaveTemps:            *leaveTemps,
-			PartialName:           partialName,
-			StubsOnly:             *stubs,
-			NoFormat:              *noformat,
-		}
-
-		if err := g.RunPartial(); err != nil {
-			return fmt.Errorf("Bootstrap failed: %v", err)
+			partialName = s + "_partial.go"
 		}
 	}
-	{
-		fInfo, err := os.Stat(partialName)
-		if err != nil {
-			return err
-		}
+	if *partialSpecifiedName != "" {
+		partialName = *partialSpecifiedName
+	}
 
-		p := parser.Parser{AllStructs: *allStructs}
-		if err := p.Parse(partialName, fInfo.IsDir()); err != nil {
-			return fmt.Errorf("Error parsing %v: %v", partialName, err)
-		}
+	var trimmedBuildTags string
+	if *buildTags != "" {
+		trimmedBuildTags = strings.TrimSpace(*buildTags)
+	}
 
-		var deEncoderName string
-		if fInfo.IsDir() {
-			deEncoderName = filepath.Join(partialName, p.PkgName+"_de_encoder.go")
+	g := bootstrap.Generator{
+		BuildTags:             trimmedBuildTags,
+		PkgPath:               p.PkgPath,
+		PkgName:               p.PkgName,
+		Types:                 p.StructNames,
+		SnakeCase:             *snakeCase,
+		LowerCamelCase:        *lowerCamelCase,
+		NoStdMarshalers:       *noStdMarshalers,
+		DisallowUnknownFields: *disallowUnknownFields,
+		OmitEmpty:             *omitEmpty,
+		LeaveTemps:            *leaveTemps,
+		PartialName:           partialName,
+		StubsOnly:             *stubs,
+		NoFormat:              *noformat,
+	}
+
+	if err = g.RunPartial(); err != nil {
+		err = fmt.Errorf("Bootstrap failed: %v", err)
+		return
+	}
+
+	return
+}
+
+func generateDeEncoder(partialName string) (err error) {
+
+	fInfo, err := os.Stat(partialName)
+	if err != nil {
+		return
+	}
+
+	p := parser.Parser{AllStructs: *allStructs}
+	if err = p.Parse(partialName, fInfo.IsDir()); err != nil {
+		err = fmt.Errorf("Error parsing %v: %v", partialName, err)
+		return
+	}
+
+	var deEncoderName string
+	if fInfo.IsDir() {
+		deEncoderName = filepath.Join(partialName, p.PkgName+"_de_encoder.go")
+	} else {
+		if s := strings.TrimSuffix(partialName, ".go"); s == partialName {
+			return errors.New("Filename must end in '.go'")
 		} else {
-			if s := strings.TrimSuffix(partialName, ".go"); s == partialName {
-				return errors.New("Filename must end in '.go'")
-			} else {
-				s = strings.TrimSuffix(s, "_partial")
-				deEncoderName = s + "_de_encoder.go"
-			}
-		}
-
-		if *deencoderSpecifiedName != "" {
-			deEncoderName = *deencoderSpecifiedName
-		}
-
-		var trimmedBuildTags string
-		if *buildTags != "" {
-			trimmedBuildTags = strings.TrimSpace(*buildTags)
-		}
-		g := bootstrap.Generator{
-			BuildTags:             trimmedBuildTags,
-			PkgPath:               p.PkgPath,
-			PkgName:               p.PkgName,
-			Types:                 p.StructNames,
-			SnakeCase:             *snakeCase,
-			LowerCamelCase:        *lowerCamelCase,
-			NoStdMarshalers:       *noStdMarshalers,
-			DisallowUnknownFields: *disallowUnknownFields,
-			OmitEmpty:             *omitEmpty,
-			LeaveTemps:            *leaveTemps,
-			DeEncoderName:         deEncoderName,
-			StubsOnly:             *stubs,
-			NoFormat:              *noformat,
-		}
-
-		if err := g.RunDeEncode(); err != nil {
-			return fmt.Errorf("Bootstrap failed: %v", err)
+			s = strings.TrimSuffix(s, "_partial")
+			deEncoderName = s + "_de_encoder.go"
 		}
 	}
 
-	return nil
+	if *deencoderSpecifiedName != "" {
+		deEncoderName = *deencoderSpecifiedName
+	}
+
+	var trimmedBuildTags string
+	if *buildTags != "" {
+		trimmedBuildTags = strings.TrimSpace(*buildTags)
+	}
+	g := bootstrap.Generator{
+		BuildTags:             trimmedBuildTags,
+		PkgPath:               p.PkgPath,
+		PkgName:               p.PkgName,
+		Types:                 p.StructNames,
+		SnakeCase:             *snakeCase,
+		LowerCamelCase:        *lowerCamelCase,
+		NoStdMarshalers:       *noStdMarshalers,
+		DisallowUnknownFields: *disallowUnknownFields,
+		OmitEmpty:             *omitEmpty,
+		LeaveTemps:            *leaveTemps,
+		DeEncoderName:         deEncoderName,
+		StubsOnly:             *stubs,
+		NoFormat:              *noformat,
+	}
+
+	if err = g.RunDeEncode(); err != nil {
+		err = fmt.Errorf("Bootstrap failed: %v", err)
+		return
+	}
+
+	return
 }
 
 func main() {
 	flag.Parse()
 
 	files := flag.Args()
-
-	gofile := os.Getenv("GOFILE")
-	if *processPkg {
-		gofile = filepath.Dir(gofile)
-	}
-
-	if len(files) == 0 && gofile != "" {
-		files = []string{gofile}
-	} else if len(files) == 0 {
+	files = []string{"/Users/vinodreddy/development/repos/newtb/server.go"}
+	if len(files) == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
+	*recursive = true
+	*allStructs = true
+	*excludeDirs = "scripts"
+	*leaveTemps = true
 
+	if *processPkg || *recursive {
+		var dirs []string
+		for _, f := range files {
+			fInfo, err := os.Stat(f)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			if !fInfo.IsDir() {
+				dirs = append(dirs, filepath.Dir(f))
+			} else {
+				dirs = append(dirs, f)
+			}
+		}
+		files = dirs
+	}
+
+	if *recursive {
+		var excludeDirsSlice []string
+		if *excludeDirs != "" {
+			excludeDirsSlice = strings.Split(*excludeDirs, ",")
+		}
+		filesMap := make(map[string]bool)
+		for _, dir := range files {
+			allFiles := make([]string, 1, 1)
+			err := parser.GetAllFiles(dir, &allFiles, excludeDirsSlice)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			fmt.Println("allFiles", allFiles)
+			for _, f := range allFiles {
+				filesMap[f] = true
+			}
+		}
+		var allFiles []string
+		for f := range filesMap {
+			allFiles = append(allFiles, f)
+		}
+		files = allFiles
+	}
+
+	var partialFiles []string
 	for _, fname := range files {
-		if err := generate(fname); err != nil {
+		if partialName, err := generatePartial(fname); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		} else {
+			if partialName != "" {
+				partialFiles = append(partialFiles, partialName)
+			}
+		}
+	}
+
+	for _, partialName := range partialFiles {
+		if err := generateDeEncoder(partialName); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
